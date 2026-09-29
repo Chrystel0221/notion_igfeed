@@ -37,7 +37,6 @@
         .aspect-square {
             aspect-ratio: 1 / 1;
         }
-        /* Custom styled scrollbars */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -68,15 +67,6 @@
         .no-scrollbar {
             -ms-overflow-style: none;
             scrollbar-width: none;
-        }
-        /* Heart Like Animation */
-        @keyframes heartPulse {
-            0% { transform: scale(0.8); opacity: 0; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(1); opacity: 0; }
-        }
-        .animate-heart {
-            animation: heartPulse 0.8s ease-in-out forwards;
         }
     </style>
 </head>
@@ -152,6 +142,7 @@
                 </div>
             </div>
 
+            <!-- Story Highlights Section -->
             <div class="flex items-center gap-4 sm:gap-6 overflow-x-auto py-6 border-b border-gray-200 dark:border-igDarkBorder no-scrollbar">
                 <div id="highlightsContainer" class="flex gap-4 sm:gap-6">
                     <!-- Dynamic Story Highlights -->
@@ -165,6 +156,7 @@
             </div>
         </header>
 
+        <!-- Feed Navigation Tabs -->
         <div class="border-t border-gray-200 dark:border-igDarkBorder">
             <div class="flex justify-center gap-12 text-xs font-semibold tracking-wider text-gray-400 uppercase">
                 <button class="tab-btn border-t-2 border-black dark:border-white text-black dark:text-white py-3 flex items-center gap-2 transition" data-tab="grid">
@@ -185,13 +177,11 @@
             </div>
         </main>
 
-        <!-- Footer Notice -->
         <footer class="text-center text-xs text-gray-400 py-6 border-t border-gray-200 dark:border-igDarkBorder mt-auto">
-            <p>Instagram Feed Planner • Reorder items by dragging photos</p>
+            <p>Instagram Feed Planner • Drag images to reorder posts</p>
         </footer>
     </div>
 
-    
     <!-- ADD / EDIT POST MODAL -->
     <div id="postModal" class="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center hidden p-4">
         <div class="bg-white dark:bg-igCardDark rounded-xl max-w-md w-full p-6 shadow-2xl relative border border-gray-200 dark:border-igDarkBorder max-h-[90vh] flex flex-col">
@@ -204,6 +194,7 @@
                 <div>
                     <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Post Format</label>
                     <select id="inputType" class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-igDarkBorder bg-gray-50 dark:bg-black text-xs font-medium focus:outline-none focus:border-igBlue">
+                        <option value="auto">Auto Detect (Single / Carousel)</option>
                         <option value="single">Single Photo</option>
                         <option value="carousel">Carousel (Multiple Photos)</option>
                         <option value="reel">Reel (Video)</option>
@@ -211,10 +202,17 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Select Media File(s)</label>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Select Media Files</label>
+                        <span id="mediaCounter" class="text-[11px] font-medium text-igBlue">0 items selected</span>
+                    </div>
+                    
+                    <!-- File input explicitly configured for multiple files -->
                     <input type="file" id="inputFile" multiple accept="image/*,video/*" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-igBlue file:text-white hover:file:bg-igBlueHover cursor-pointer">
-                    <p class="text-[11px] text-gray-400 mt-1" id="fileHelpText">Select 1 photo file.</p>
-                    <div id="filePreviewContainer" class="mt-3 flex gap-2 overflow-x-auto hidden py-2 border-t border-gray-100 dark:border-igDarkBorder"></div>
+                    <p class="text-[11px] text-gray-400 mt-1" id="fileHelpText">Hold Ctrl/Cmd or select multiple photos at once for a carousel post.</p>
+                    
+                    <!-- Thumbnail preview list with individual remove X buttons -->
+                    <div id="filePreviewContainer" class="mt-3 flex gap-2 overflow-x-auto hidden py-2 border-t border-gray-100 dark:border-igDarkBorder no-scrollbar"></div>
                 </div>
 
                 <div>
@@ -244,7 +242,7 @@
         <div class="bg-white dark:bg-black rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col sm:flex-row overflow-hidden shadow-2xl border border-gray-800">
             
             <!-- Left Side: Media Lightbox Container -->
-            <div class="sm:w-3/5 bg-black flex items-center justify-center aspect-square sm:aspect-auto relative overflow-hidden group select-none">
+            <div class="sm:w-3/5 bg-black flex items-center justify-center aspect-square sm:aspect-auto relative overflow-hidden group select-none min-h-[300px]">
                 <!-- Image Viewer -->
                 <img id="viewImage" src="" alt="Post Media" class="max-h-full max-w-full object-contain hidden">
                 
@@ -252,15 +250,15 @@
                 <video id="viewVideo" controls class="max-h-full max-w-full hidden" autoplay loop muted playsinline></video>
 
                 <!-- Carousel Navigation Arrows -->
-                <button id="prevSlideBtn" class="absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/90 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs hidden transition transform active:scale-90">
+                <button id="prevSlideBtn" class="absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/90 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs hidden transition transform active:scale-90 z-10">
                     <i class="fa-solid fa-chevron-left"></i>
                 </button>
-                <button id="nextSlideBtn" class="absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/90 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs hidden transition transform active:scale-90">
+                <button id="nextSlideBtn" class="absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/90 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs hidden transition transform active:scale-90 z-10">
                     <i class="fa-solid fa-chevron-right"></i>
                 </button>
 
                 <!-- Carousel Dots Indicator -->
-                <div id="carouselDots" class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 hidden bg-black/40 px-2.5 py-1 rounded-full backdrop-blur-xs"></div>
+                <div id="carouselDots" class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 hidden bg-black/50 px-3 py-1.5 rounded-full backdrop-blur-xs z-10"></div>
             </div>
 
             <!-- Right Side: Post Details & Comments -->
@@ -272,12 +270,13 @@
                         <img id="viewAvatar" src="" class="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700">
                         <span id="viewUsername" class="font-bold text-xs"></span>
                     </div>
-                    <button id="deletePostBtn" title="Delete Post" class="text-red-500 hover:text-red-700 text-xs p-1">
+                    <button id="deletePostBtn" title="Delete Post" class="text-red-500 hover:text-red-700 text-xs p-1 flex items-center gap-1 font-semibold">
                         <i class="fa-solid fa-trash-can"></i>
+                        <span>Delete</span>
                     </button>
                 </div>
 
-                <!-- Caption & Comments Scroll Area -->
+                <!-- Caption Area -->
                 <div class="flex-1 py-4 overflow-y-auto text-xs space-y-3">
                     <div class="flex items-start gap-3">
                         <img id="viewCaptionAvatar" src="" class="w-7 h-7 rounded-full object-cover flex-shrink-0 border border-gray-200 dark:border-gray-700">
@@ -363,7 +362,7 @@
     </div>
 
     <script>
-        // Default Mock Data
+        // Default Data Set
         const defaultProfile = {
             username: "aesthetic_creator",
             name: "Aesthetic Feed & Design Planner",
@@ -438,9 +437,11 @@
         let activePostId = null;
         let activeCarouselIndex = 0;
         let activeHighlightId = null;
+        
+        // Array of base64 strings or media URLs for the current post upload form
         let uploadedMediaArray = [];
 
-        // Helper: Convert File to Base64 String
+        // Helper: Convert File object to Base64 String
         function fileToBase64(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -450,7 +451,7 @@
             });
         }
 
-        // Load & Save LocalStorage
+        // Local Storage Handlers
         function loadState() {
             try {
                 const p = localStorage.getItem('ig_planner_profile');
@@ -462,7 +463,7 @@
                 const po = localStorage.getItem('ig_planner_posts');
                 if (po) posts = JSON.parse(po);
             } catch (e) {
-                console.warn('LocalStorage error:', e);
+                console.warn('LocalStorage load error:', e);
             }
         }
 
@@ -476,7 +477,7 @@
             }
         }
 
-        // Render Functions
+        // Render Profile Information
         function renderProfile() {
             document.getElementById('profileAvatar').src = profile.avatar;
             document.getElementById('profileUsername').innerText = profile.username;
@@ -490,6 +491,7 @@
             document.getElementById('statPostsCount').innerText = posts.length;
         }
 
+        // Render Story Highlights
         function renderHighlights() {
             const container = document.getElementById('highlightsContainer');
             container.innerHTML = highlights.map(h => `
@@ -502,6 +504,7 @@
             `).join('');
         }
 
+        // Render Feed Grid Cards
         function renderGrid() {
             const grid = document.getElementById('feedGrid');
             grid.innerHTML = '';
@@ -525,10 +528,10 @@
                 card.dataset.id = post.id;
 
                 let iconBadge = '';
-                if (post.type === 'carousel') {
-                    iconBadge = `<div class="absolute top-2.5 right-2.5 text-white drop-shadow-md text-xs"><i class="fa-solid fa-layer-group"></i></div>`;
+                if (post.type === 'carousel' || (post.media && post.media.length > 1)) {
+                    iconBadge = `<div class="absolute top-2.5 right-2.5 text-white drop-shadow-md text-xs z-10"><i class="fa-solid fa-layer-group"></i></div>`;
                 } else if (post.type === 'reel') {
-                    iconBadge = `<div class="absolute top-2.5 right-2.5 text-white drop-shadow-md text-xs"><i class="fa-solid fa-play"></i></div>`;
+                    iconBadge = `<div class="absolute top-2.5 right-2.5 text-white drop-shadow-md text-xs z-10"><i class="fa-solid fa-play"></i></div>`;
                 }
 
                 let mediaHTML = '';
@@ -541,56 +544,92 @@
                 card.innerHTML = `
                     ${mediaHTML}
                     ${iconBadge}
+                    
+                    <!-- Quick Delete Button on Grid Card Hover -->
+                    <button class="delete-grid-btn absolute top-2.5 left-2.5 bg-black/60 hover:bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition z-20" title="Delete Post">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+
                     <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-6 text-white font-bold text-xs pointer-events-none">
                         <div class="flex items-center gap-1.5"><i class="fa-solid fa-heart"></i> ${post.likes}</div>
                     </div>
                 `;
 
-                // Open lightbox on click
+                // Quick Delete Event Listener
+                const deleteBtn = card.querySelector('.delete-grid-btn');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deletePost(post.id);
+                });
+
+                // Open Lightbox Event Listener
                 card.addEventListener('click', () => openViewModal(post.id));
                 grid.appendChild(card);
             });
         }
 
-        // File Selection & Preview Handling
-        document.getElementById('inputType').addEventListener('change', (e) => {
-            const val = e.target.value;
-            const fileInput = document.getElementById('inputFile');
-            const helpText = document.getElementById('fileHelpText');
-
-            if (val === 'carousel') {
-                fileInput.setAttribute('multiple', 'true');
-                helpText.innerText = "Select 2 or more photos for carousel.";
-            } else if (val === 'reel') {
-                fileInput.removeAttribute('multiple');
-                helpText.innerText = "Select a video file (MP4/WEBM).";
-            } else {
-                fileInput.removeAttribute('multiple');
-                helpText.innerText = "Select 1 photo file.";
+        // Render Image/Video Preview Thumbnails in Modal with Remove Buttons
+        function updateFilePreviews() {
+            const container = document.getElementById('filePreviewContainer');
+            const counter = document.getElementById('mediaCounter');
+            
+            counter.innerText = `${uploadedMediaArray.length} items selected`;
+            
+            if (uploadedMediaArray.length === 0) {
+                container.innerHTML = '';
+                container.classList.add('hidden');
+                return;
             }
-        });
 
+            container.classList.remove('hidden');
+            container.innerHTML = uploadedMediaArray.map((mediaSrc, index) => {
+                const isVideo = mediaSrc.startsWith('data:video') || mediaSrc.endsWith('.mp4');
+                return `
+                    <div class="relative group/thumb flex-shrink-0">
+                        ${isVideo ? 
+                            `<video src="${mediaSrc}" class="w-16 h-16 object-cover rounded-lg border border-gray-300 dark:border-gray-700"></video>` :
+                            `<img src="${mediaSrc}" class="w-16 h-16 object-cover rounded-lg border border-gray-300 dark:border-gray-700">`
+                        }
+                        <button type="button" onclick="removeUploadedMedia(${index})" class="absolute -top-1.5 -right-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow-md transition">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Remove media item from selection array
+        function removeUploadedMedia(index) {
+            uploadedMediaArray.splice(index, 1);
+            updateFilePreviews();
+        }
+
+        // Handle File Input Selection
         document.getElementById('inputFile').addEventListener('change', async (e) => {
             const files = Array.from(e.target.files);
-            uploadedMediaArray = [];
-            const container = document.getElementById('filePreviewContainer');
-            container.innerHTML = '';
+            if (!files.length) return;
 
             for (let file of files) {
-                const base64 = await fileToBase64(file);
-                uploadedMediaArray.push(base64);
-
-                const isVideo = file.type.startsWith('video');
-                const el = document.createElement(isVideo ? 'video' : 'img');
-                el.src = base64;
-                el.className = "w-14 h-14 object-cover rounded border border-gray-300 dark:border-gray-700 flex-shrink-0";
-                container.appendChild(el);
+                try {
+                    const base64 = await fileToBase64(file);
+                    uploadedMediaArray.push(base64);
+                } catch (err) {
+                    console.error("Error reading file:", err);
+                }
             }
 
-            if (uploadedMediaArray.length > 0) {
-                container.classList.remove('hidden');
-            }
+            // Clear file input value so selecting the same file again triggers change event
+            e.target.value = '';
+            updateFilePreviews();
         });
+
+        // Delete Post Function
+        function deletePost(id) {
+            posts = posts.filter(p => p.id !== id);
+            saveState();
+            renderGrid();
+            renderProfile();
+        }
 
         // Lightbox View Logic
         function openViewModal(id) {
@@ -629,6 +668,7 @@
             document.getElementById('viewModal').classList.remove('hidden');
         }
 
+        // Update Slide Navigation Image and Indicators
         function updateCarouselView(post) {
             const imgEl = document.getElementById('viewImage');
             const prevBtn = document.getElementById('prevSlideBtn');
@@ -637,7 +677,7 @@
 
             imgEl.src = post.media[activeCarouselIndex];
 
-            if (post.type === 'carousel' && post.media.length > 1) {
+            if (post.media && post.media.length > 1) {
                 prevBtn.classList.toggle('hidden', activeCarouselIndex === 0);
                 nextBtn.classList.toggle('hidden', activeCarouselIndex === post.media.length - 1);
                 
@@ -652,7 +692,7 @@
             }
         }
 
-        // Slide Arrow Navigation
+        // Navigation Chevron Click Listeners
         document.getElementById('prevSlideBtn').onclick = () => {
             const post = posts.find(p => p.id === activePostId);
             if (post && activeCarouselIndex > 0) {
@@ -669,7 +709,7 @@
             }
         };
 
-        // Add Post Form Submit
+        // Submit New Post Form
         document.getElementById('postForm').addEventListener('submit', (e) => {
             e.preventDefault();
 
@@ -678,7 +718,13 @@
                 return;
             }
 
-            const type = document.getElementById('inputType').value;
+            let type = document.getElementById('inputType').value;
+            
+            // Auto detect type based on media count
+            if (type === 'auto') {
+                type = uploadedMediaArray.length > 1 ? 'carousel' : 'single';
+            }
+
             const likes = parseInt(document.getElementById('inputLikes').value) || 0;
             const caption = document.getElementById('inputCaption').value;
 
@@ -695,10 +741,14 @@
             renderGrid();
             renderProfile();
 
+            // Clear state and close modal
+            uploadedMediaArray = [];
+            updateFilePreviews();
+            document.getElementById('postForm').reset();
             document.getElementById('postModal').classList.add('hidden');
         });
 
-        // Edit Profile Submit
+        // Edit Profile Form Handler
         document.getElementById('profileForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -776,7 +826,7 @@
             document.getElementById('highlightModal').classList.add('hidden');
         };
 
-        // Navigation Tab Switching
+        // Tab Switchers
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.tab-btn').forEach(b => {
@@ -791,7 +841,7 @@
             });
         });
 
-        // Initialize Drag and Drop Grid Reordering
+        // Initialize Drag and Drop Grid Reordering with SortableJS
         function initSortable() {
             const grid = document.getElementById('feedGrid');
             new Sortable(grid, {
@@ -806,7 +856,7 @@
             });
         }
 
-        // Initialize App on Window Load
+        // App Initialization
         window.onload = function() {
             loadState();
             renderProfile();
@@ -814,11 +864,11 @@
             renderGrid();
             initSortable();
 
-            // Modal Button Triggers
+            // Button Click Handlers
             document.getElementById('addPostBtn').onclick = () => {
                 uploadedMediaArray = [];
+                updateFilePreviews();
                 document.getElementById('postForm').reset();
-                document.getElementById('filePreviewContainer').classList.add('hidden');
                 document.getElementById('postModal').classList.remove('hidden');
             };
 
@@ -845,13 +895,8 @@
             };
 
             document.getElementById('deletePostBtn').onclick = () => {
-                if (confirm("Are you sure you want to delete this post from your planner?")) {
-                    posts = posts.filter(p => p.id !== activePostId);
-                    saveState();
-                    renderGrid();
-                    renderProfile();
-                    document.getElementById('viewModal').classList.add('hidden');
-                }
+                deletePost(activePostId);
+                document.getElementById('viewModal').classList.add('hidden');
             };
 
             document.getElementById('toggleThemeBtn').onclick = () => {
@@ -859,20 +904,17 @@
             };
 
             document.getElementById('resetDemoBtn').onclick = () => {
-                if (confirm("Reset profile and feed back to default template?")) {
-                    profile = { ...defaultProfile };
-                    highlights = [...defaultHighlights];
-                    posts = [...defaultPosts];
-                    saveState();
-                    renderProfile();
-                    renderHighlights();
-                    renderGrid();
-                }
+                profile = { ...defaultProfile };
+                highlights = [...defaultHighlights];
+                posts = [...defaultPosts];
+                saveState();
+                renderProfile();
+                renderHighlights();
+                renderGrid();
             };
 
             document.getElementById('shareProfileBtn').onclick = () => {
-                navigator.clipboard?.writeText(window.location.href);
-                alert("Planner link copied to clipboard!");
+                document.execCommand('copy');
             };
 
             document.getElementById('likePostBtn').onclick = () => {
@@ -884,435 +926,6 @@
                     renderGrid();
                 }
             };
-        };
-    </script>
-</body>
-</html>        /* Custom scrollbars */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(156, 163, 175, 0.5);
-            border-radius: 9999px;
-        }
-        /* Dragging styles */
-        .sortable-ghost {
-            opacity: 0.3;
-            transform: scale(0.95);
-        }
-        .sortable-drag {
-            cursor: grabbing;
-        }
-    </style>
-</head>
-<body class="bg-white dark:bg-black text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
-
-    <div id="app" class="max-w-4xl mx-auto p-3 sm:p-6">
-        
-        <!-- Top Toolbar for Notion Widget Controls -->
-        <div class="flex items-center justify-between pb-4 mb-4 border-b border-gray-200 dark:border-igDarkBorder">
-            <div class="flex items-center gap-2">
-                <i class="fa-brands fa-instagram text-2xl text-pink-600"></i>
-                <span class="font-semibold text-lg tracking-tight hidden sm:inline">Feed Planner</span>
-            </div>
-            
-            <div class="flex items-center gap-2">
-                <button id="addPostBtn" class="flex items-center gap-1.5 bg-igBlue hover:bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm font-semibold transition">
-                    <i class="fa-solid fa-plus"></i>
-                    <span>Add Post</span>
-                </button>
-                <button id="toggleThemeBtn" class="p-2 rounded-lg bg-gray-100 dark:bg-igCardDark hover:bg-gray-200 dark:hover:bg-gray-800 transition text-sm">
-                    <i class="fa-solid fa-moon dark:hidden"></i>
-                    <i class="fa-solid fa-sun hidden dark:inline text-yellow-400"></i>
-                </button>
-            </div>
-        </div>
-
-        <header class="mb-8">
-            <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-10">
-                <!-- Profile Avatar -->
-                <div class="relative group cursor-pointer" id="editAvatarBtn">
-                    <div class="w-24 h-24 sm:w-36 sm:h-36 rounded-full p-1 bg-gradient-to-tr from-yellow-400 via-rose-500 to-purple-600">
-                        <img id="profileAvatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80" alt="Avatar" class="w-full h-full object-cover rounded-full border-2 border-white dark:border-black">
-                    </div>
-                    <div class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-xs font-semibold">
-                        Change
-                    </div>
-                </div>
-
-                <!-- Profile Info -->
-                <div class="flex-1 text-center sm:text-left space-y-4">
-                    <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-                        <h2 id="profileUsername" class="text-xl font-normal tracking-wide">my_notion_space</h2>
-                        <div class="flex justify-center gap-2">
-                            <button id="editProfileBtn" class="px-4 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg font-semibold text-sm transition">Edit profile</button>
-                            <button class="p-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm"><i class="fa-solid fa-gear"></i></button>
-                        </div>
-                    </div>
-
-                    <!-- Post/Follower Stats -->
-                    <div class="flex justify-center sm:justify-start gap-6 text-sm border-y sm:border-none py-2 sm:py-0 border-gray-200 dark:border-igDarkBorder">
-                        <div><span id="statPostsCount" class="font-semibold">0</span> posts</div>
-                        <div><span class="font-semibold">12.4k</span> followers</div>
-                        <div><span class="font-semibold">482</span> following</div>
-                    </div>
-
-                    <!-- Bio -->
-                    <div class="text-sm space-y-1">
-                        <div id="profileName" class="font-semibold">Aesthetic Feed & Planner</div>
-                        <p id="profileBio" class="text-gray-700 dark:text-gray-300 whitespace-pre-line">✨ Curating daily aesthetics
-🌿 Notion Workspace Customization
-📍 Design & Productivity</p>
-                        <a id="profileLink" href="https://notion.so" target="_blank" class="text-blue-900 dark:text-blue-400 font-semibold flex items-center justify-center sm:justify-start gap-1">
-                            <i class="fa-solid fa-link text-xs"></i> notion.so/my-workspace
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Story Highlights Container -->
-            <div id="highlightsContainer" class="flex gap-4 sm:gap-6 overflow-x-auto py-6 mt-2 no-scrollbar">
-                <!-- Dynamic Highlights inserted via JS -->
-            </div>
-        </header>
-
-        <div class="border-t border-gray-200 dark:border-igDarkBorder">
-            <div class="flex justify-center gap-12 text-xs font-semibold tracking-wider text-gray-400 uppercase">
-                <button class="tab-btn active border-t-2 border-black dark:border-white text-black dark:text-white py-3 flex items-center gap-2" data-tab="grid">
-                    <i class="fa-solid fa-border-all text-base"></i> Posts
-                </button>
-                <button class="tab-btn hover:text-gray-600 dark:hover:text-gray-300 py-3 flex items-center gap-2" data-tab="reels">
-                    <i class="fa-solid fa-clapperboard text-base"></i> Reels
-                </button>
-                <button class="tab-btn hover:text-gray-600 dark:hover:text-gray-300 py-3 flex items-center gap-2" data-tab="saved">
-                    <i class="fa-regular fa-bookmark text-base"></i> Saved
-                </button>
-            </div>
-        </div>
-
-        <main>
-            <div id="feedGrid" class="grid grid-cols-3 gap-1 sm:gap-4 my-4">
-                <!-- Dynamic Post Grid Cards appended by JS -->
-            </div>
-        </main>
-    </div>
-
-    <!-- ADD/EDIT POST MODAL -->
-    <div id="postModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white dark:bg-igCardDark rounded-xl max-w-md w-full p-6 shadow-2xl relative">
-            <button id="closePostModal" class="absolute top-4 right-4 text-gray-400 hover:text-black dark:hover:text-white text-xl">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <h3 id="modalTitle" class="text-lg font-bold mb-4">Add New Post</h3>
-            <form id="postForm" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Image / Media URL</label>
-                    <input type="url" id="inputImageUrl" required placeholder="https://images.unsplash.com/..." class="w-full p-2.5 rounded-lg border dark:border-igDarkBorder bg-gray-50 dark:bg-black text-sm focus:outline-none focus:border-igBlue">
-                </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Type</label>
-                        <select id="inputType" class="w-full p-2.5 rounded-lg border dark:border-igDarkBorder bg-gray-50 dark:bg-black text-sm focus:outline-none focus:border-igBlue">
-                            <option value="single">Single Photo</option>
-                            <option value="carousel">Carousel Slide</option>
-                            <option value="reel">Reel / Video</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Likes Count</label>
-                        <input type="number" id="inputLikes" value="128" min="0" class="w-full p-2.5 rounded-lg border dark:border-igDarkBorder bg-gray-50 dark:bg-black text-sm focus:outline-none focus:border-igBlue">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Caption</label>
-                    <textarea id="inputCaption" rows="3" placeholder="Write a caption..." class="w-full p-2.5 rounded-lg border dark:border-igDarkBorder bg-gray-50 dark:bg-black text-sm focus:outline-none focus:border-igBlue"></textarea>
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" id="cancelPostBtn" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 dark:bg-gray-800 hover:bg-gray-200">Cancel</button>
-                    <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold bg-igBlue text-white hover:bg-blue-600">Save Post</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- POST PREVIEW MODAL -->
-    <div id="viewModal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center hidden p-2 sm:p-6">
-        <button id="closeViewModal" class="absolute top-4 right-4 text-white text-2xl z-10">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-        <div class="bg-white dark:bg-black rounded-r-xl max-w-4xl w-full max-h-[90vh] flex flex-col sm:flex-row overflow-hidden shadow-2xl">
-            <!-- Media Area -->
-            <div class="sm:w-3/5 bg-black flex items-center justify-center aspect-square sm:aspect-auto">
-                <img id="viewImage" src="" alt="Post" class="max-h-full max-w-full object-contain">
-            </div>
-            <!-- Details / Comments Area -->
-            <div class="sm:w-2/5 flex flex-col h-full border-l border-gray-200 dark:border-igDarkBorder p-4">
-                <!-- Header -->
-                <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-igDarkBorder">
-                    <div class="flex items-center gap-3">
-                        <img id="viewAvatar" src="" class="w-8 h-8 rounded-full object-cover">
-                        <span id="viewUsername" class="font-semibold text-sm"></span>
-                    </div>
-                    <button id="deletePostBtn" class="text-red-500 hover:text-red-700 text-sm">
-                        <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                </div>
-                <!-- Caption Body -->
-                <div class="flex-1 py-4 overflow-y-auto text-sm space-y-3">
-                    <p id="viewCaption" class="whitespace-pre-line"></p>
-                </div>
-                <!-- Action Footer -->
-                <div class="pt-3 border-t border-gray-200 dark:border-igDarkBorder space-y-2">
-                    <div class="flex justify-between text-xl">
-                        <div class="flex gap-4">
-                            <i class="fa-regular fa-heart hover:text-red-500 cursor-pointer"></i>
-                            <i class="fa-regular fa-comment hover:text-gray-500 cursor-pointer"></i>
-                            <i class="fa-regular fa-paper-plane hover:text-gray-500 cursor-pointer"></i>
-                        </div>
-                        <i class="fa-regular fa-bookmark hover:text-gray-500 cursor-pointer"></i>
-                    </div>
-                    <div id="viewLikes" class="font-semibold text-xs"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- EDIT PROFILE MODAL -->
-    <div id="profileModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
-        <div class="bg-white dark:bg-igCardDark rounded-xl max-w-md w-full p-6 shadow-2xl">
-            <h3 class="text-lg font-bold mb-4">Edit Profile</h3>
-            <form id="profileForm" class="space-y-3">
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Avatar URL</label>
-                    <input type="url" id="editAvatarUrl" class="w-full p-2 rounded-lg border dark:border-igDarkBorder bg-gray-50 dark:bg-black text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Username</label>
-                    <input type="text" id="editUsername" class="w-full p-2 rounded-lg border dark:border-igDarkBorder bg-gray-50 dark:bg-black text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Name</label>
-                    <input type="text" id="editName" class="w-full p-2 rounded-lg border dark:border-igDarkBorder bg-gray-50 dark:bg-black text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Bio</label>
-                    <textarea id="editBio" rows="3" class="w-full p-2 rounded-lg border dark:border-igDarkBorder bg-gray-50 dark:bg-black text-sm"></textarea>
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" id="closeProfileModal" class="px-4 py-2 rounded-lg text-sm font-semibold bg-gray-100 dark:bg-gray-800">Cancel</button>
-                    <button type="submit" class="px-4 py-2 rounded-lg text-sm font-semibold bg-igBlue text-white">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        // Default Mock Data
-        let profile = {
-            username: "my_notion_space",
-            name: "Aesthetic Feed & Planner",
-            avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80",
-            bio: "✨ Curating daily aesthetics\n🌿 Notion Workspace Customization\n📍 Design & Productivity",
-            website: "https://notion.so"
-        };
-
-        let highlights = [
-            { id: 1, title: "Travel", cover: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=150&auto=format&fit=crop&q=80" },
-            { id: 2, title: "Design", cover: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=150&auto=format&fit=crop&q=80" },
-            { id: 3, title: "Notion", cover: "https://images.unsplash.com/photo-1517842645767-c639042777db?w=150&auto=format&fit=crop&q=80" },
-            { id: 4, title: "Quotes", cover: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=150&auto=format&fit=crop&q=80" }
-        ];
-
-        let posts = [
-            { id: '1', url: 'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=600&auto=format&fit=crop&q=80', type: 'carousel', likes: 245, comments: 18, caption: 'Minimal desk setup for maximum focus. 💻✨ #workspace #setup #minimalism' },
-            { id: '2', url: 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=600&auto=format&fit=crop&q=80', type: 'single', likes: 189, comments: 12, caption: 'Morning coffee & planning session. ☕️📖' },
-            { id: '3', url: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=600&auto=format&fit=crop&q=80', type: 'reel', likes: 890, comments: 45, caption: 'How I organize my life with Notion! Link in bio. 🚀' },
-            { id: '4', url: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=600&auto=format&fit=crop&q=80', type: 'single', likes: 312, comments: 22, caption: 'Quiet moments of creation. 🌿' },
-            { id: '5', url: 'https://images.unsplash.com/photo-1517842645767-c639042777db?w=600&auto=format&fit=crop&q=80', type: 'single', likes: 156, comments: 9, caption: 'Weekly goals roadmap. Stay tuned!' },
-            { id: '6', url: 'https://images.unsplash.com/photo-1455390582262-044cdead277a?w=600&auto=format&fit=crop&q=80', type: 'carousel', likes: 421, comments: 31, caption: 'Aesthetic moodboard for this month.' }
-        ];
-
-        let activePostId = null;
-
-        // Load persisted state from LocalStorage if available
-        function loadState() {
-            const savedProfile = localStorage.getItem('ig_widget_profile');
-            if (savedProfile) profile = JSON.parse(savedProfile);
-            
-            const savedPosts = localStorage.getItem('ig_widget_posts');
-            if (savedPosts) posts = JSON.parse(savedPosts);
-        }
-
-        function saveState() {
-            localStorage.setItem('ig_widget_profile', JSON.stringify(profile));
-            localStorage.setItem('ig_widget_posts', JSON.stringify(posts));
-        }
-
-        // Render Profile Details
-        function renderProfile() {
-            document.getElementById('profileAvatar').src = profile.avatar;
-            document.getElementById('profileUsername').innerText = profile.username;
-            document.getElementById('profileName').innerText = profile.name;
-            document.getElementById('profileBio').innerText = profile.bio;
-            document.getElementById('profileLink').innerHTML = `<i class="fa-solid fa-link text-xs"></i> ${profile.website.replace('https://', '')}`;
-            document.getElementById('statPostsCount').innerText = posts.length;
-        }
-
-        // Render Story Highlights
-        function renderHighlights() {
-            const container = document.getElementById('highlightsContainer');
-            container.innerHTML = highlights.map(h => `
-                <div class="flex flex-col items-center gap-1 min-w-[70px] cursor-pointer group">
-                    <div class="w-16 h-16 rounded-full p-[2px] border border-gray-300 dark:border-gray-700 group-hover:scale-105 transition">
-                        <img src="${h.cover}" class="w-full h-full object-cover rounded-full">
-                    </div>
-                    <span class="text-xs text-gray-600 dark:text-gray-400 truncate max-w-[64px]">${h.title}</span>
-                </div>
-            `).join('');
-        }
-
-        function renderGrid() {
-            const grid = document.getElementById('feedGrid');
-            grid.innerHTML = '';
-
-            posts.forEach(post => {
-                const card = document.createElement('div');
-                card.className = "relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-900 group cursor-pointer rounded-sm";
-                card.dataset.id = post.id;
-
-                let iconHTML = '';
-                if (post.type === 'carousel') {
-                    iconHTML = `<div class="absolute top-2 right-2 text-white drop-shadow-md text-sm"><i class="fa-solid fa-layer-group"></i></div>`;
-                } else if (post.type === 'reel') {
-                    iconHTML = `<div class="absolute top-2 right-2 text-white drop-shadow-md text-sm"><i class="fa-solid fa-play"></i></div>`;
-                }
-
-                card.innerHTML = `
-                    <img src="${post.url}" class="w-full h-full object-cover select-none pointer-events-none">
-                    ${iconHTML}
-                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-6 text-white font-bold text-sm">
-                        <div class="flex items-center gap-1.5"><i class="fa-solid fa-heart"></i> ${post.likes}</div>
-                        <div class="flex items-center gap-1.5"><i class="fa-solid fa-comment"></i> ${post.comments}</div>
-                    </div>
-                `;
-
-                card.addEventListener('click', () => openViewModal(post.id));
-                grid.appendChild(card);
-            });
-
-            document.getElementById('statPostsCount').innerText = posts.length;
-        }
-
-        function initSortable() {
-            const grid = document.getElementById('feedGrid');
-            new Sortable(grid, {
-                animation: 200,
-                ghostClass: 'sortable-ghost',
-                dragClass: 'sortable-drag',
-                onEnd: function () {
-                    const newOrder = Array.from(grid.children).map(child => child.dataset.id);
-                    posts.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
-                    saveState();
-                }
-            });
-        }
-
-        function openViewModal(id) {
-            const post = posts.find(p => p.id === id);
-            if (!post) return;
-            activePostId = id;
-
-            document.getElementById('viewImage').src = post.url;
-            document.getElementById('viewAvatar').src = profile.avatar;
-            document.getElementById('viewUsername').innerText = profile.username;
-            document.getElementById('viewCaption').innerText = post.caption;
-            document.getElementById('viewLikes').innerText = `${post.likes} likes`;
-
-            document.getElementById('viewModal').classList.remove('hidden');
-        }
-
-        // Delete Post
-        document.getElementById('deletePostBtn').addEventListener('click', () => {
-            if (activePostId) {
-                posts = posts.filter(p => p.id !== activePostId);
-                saveState();
-                renderGrid();
-                document.getElementById('viewModal').classList.add('hidden');
-            }
-        });
-
-        // Add Post Modal
-        document.getElementById('addPostBtn').addEventListener('click', () => {
-            document.getElementById('postModal').classList.remove('hidden');
-        });
-
-        document.getElementById('closePostModal').addEventListener('click', () => {
-            document.getElementById('postModal').classList.add('hidden');
-        });
-
-        document.getElementById('cancelPostBtn').addEventListener('click', () => {
-            document.getElementById('postModal').classList.add('hidden');
-        });
-
-        document.getElementById('postForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            const newPost = {
-                id: Date.now().toString(),
-                url: document.getElementById('inputImageUrl').value,
-                type: document.getElementById('inputType').value,
-                likes: parseInt(document.getElementById('inputLikes').value) || 0,
-                comments: 0,
-                caption: document.getElementById('inputCaption').value
-            };
-            posts.unshift(newPost);
-            saveState();
-            renderGrid();
-            document.getElementById('postModal').classList.add('hidden');
-            document.getElementById('postForm').reset();
-        });
-
-        // Close View Modal
-        document.getElementById('closeViewModal').addEventListener('click', () => {
-            document.getElementById('viewModal').classList.add('hidden');
-        });
-
-        // Edit Profile Modal
-        document.getElementById('editProfileBtn').addEventListener('click', () => {
-            document.getElementById('editAvatarUrl').value = profile.avatar;
-            document.getElementById('editUsername').value = profile.username;
-            document.getElementById('editName').value = profile.name;
-            document.getElementById('editBio').value = profile.bio;
-            document.getElementById('profileModal').classList.remove('hidden');
-        });
-
-        document.getElementById('closeProfileModal').addEventListener('click', () => {
-            document.getElementById('profileModal').classList.add('hidden');
-        });
-
-        document.getElementById('profileForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            profile.avatar = document.getElementById('editAvatarUrl').value;
-            profile.username = document.getElementById('editUsername').value;
-            profile.name = document.getElementById('editName').value;
-            profile.bio = document.getElementById('editBio').value;
-            saveState();
-            renderProfile();
-            document.getElementById('profileModal').classList.add('hidden');
-        });
-
-        // Theme Toggle Button
-        document.getElementById('toggleThemeBtn').addEventListener('click', () => {
-            document.documentElement.classList.toggle('dark');
-        });
-
-        // Initialize App
-        window.onload = function() {
-            loadState();
-            renderProfile();
-            renderHighlights();
-            renderGrid();
-            initSortable();
         };
     </script>
 </body>
