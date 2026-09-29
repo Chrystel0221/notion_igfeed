@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram Grid Feed Widget for Notion</title>
+    <title>Instagram Grid Feed & Profile Planner</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- SortableJS for smooth drag & drop -->
+    <!-- SortableJS for smooth Drag and Drop Grid Reordering -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script>
         tailwind.config = {
@@ -20,21 +20,874 @@
                         igDarkBorder: '#262626',
                         igBgDark: '#000000',
                         igCardDark: '#121212',
-                        igBlue: '#0095f6'
+                        igBlue: '#0095f6',
+                        igBlueHover: '#1877f2',
                     }
                 }
             }
         }
     </script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             user-select: none;
+            -webkit-user-select: none;
         }
         .aspect-square {
             aspect-ratio: 1 / 1;
         }
-        /* Custom scrollbars */
+        /* Custom styled scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.7);
+        }
+        .sortable-ghost {
+            opacity: 0.25;
+            transform: scale(0.95);
+            border: 2px dashed #0095f6;
+        }
+        .sortable-drag {
+            cursor: grabbing;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+            z-index: 50;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Heart Like Animation */
+        @keyframes heartPulse {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0; }
+        }
+        .animate-heart {
+            animation: heartPulse 0.8s ease-in-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-black text-slate-900 dark:text-slate-100 min-h-screen transition-colors duration-200">
+
+    <div id="app" class="max-w-4xl mx-auto p-3 sm:p-6 min-h-screen flex flex-col">
+        
+        <!-- Top Toolbar for Planner Controls -->
+        <div class="flex items-center justify-between pb-4 mb-6 border-b border-gray-200 dark:border-igDarkBorder">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600 flex items-center justify-center text-white shadow-md">
+                    <i class="fa-brands fa-instagram text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base tracking-tight leading-tight">IG Feed Planner</h1>
+                    <p class="text-[11px] text-gray-500 dark:text-gray-400">Drag to reorder • Live preview</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button id="addPostBtn" class="flex items-center gap-2 bg-igBlue hover:bg-igBlueHover text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition active:scale-95">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>New Post</span>
+                </button>
+                <button id="resetDemoBtn" title="Reset Demo Data" class="p-2 rounded-lg bg-gray-200 dark:bg-igCardDark hover:bg-gray-300 dark:hover:bg-gray-800 transition text-xs text-gray-600 dark:text-gray-300">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button id="toggleThemeBtn" title="Toggle Theme" class="p-2 rounded-lg bg-gray-200 dark:bg-igCardDark hover:bg-gray-300 dark:hover:bg-gray-800 transition text-xs text-gray-600 dark:text-gray-300">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:inline text-amber-400"></i>
+                </button>
+            </div>
+        </div>
+
+        <header class="mb-6">
+            <div class="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-10">
+                <!-- Profile Avatar -->
+                <div class="relative group cursor-pointer" id="editAvatarBtn" title="Change Avatar">
+                    <div class="w-24 h-24 sm:w-36 sm:h-36 rounded-full p-[3px] bg-gradient-to-tr from-amber-400 via-rose-500 to-purple-600 shadow-md">
+                        <img id="profileAvatar" src="" alt="Avatar" class="w-full h-full object-cover rounded-full border-2 border-white dark:border-black bg-gray-200 dark:bg-gray-800">
+                    </div>
+                    <div class="absolute inset-0 bg-black/40 rounded-full flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-xs font-semibold gap-1">
+                        <i class="fa-solid fa-camera text-base"></i>
+                        <span>Change</span>
+                    </div>
+                </div>
+
+                <!-- Profile Info & Metrics -->
+                <div class="flex-1 text-center sm:text-left space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                        <h2 id="profileUsername" class="text-xl font-normal tracking-wide truncate max-w-[200px] sm:max-w-none">username</h2>
+                        <div class="flex justify-center gap-2">
+                            <button id="editProfileBtn" class="px-4 py-1.5 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg font-semibold text-xs transition">Edit profile</button>
+                            <button id="shareProfileBtn" class="px-3 py-1.5 bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 rounded-lg font-semibold text-xs transition"><i class="fa-solid fa-share"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Post/Follower Stats -->
+                    <div class="flex justify-center sm:justify-start gap-8 text-sm border-y sm:border-none py-2.5 sm:py-0 border-gray-200 dark:border-igDarkBorder">
+                        <div><span id="statPostsCount" class="font-bold">0</span> <span class="text-gray-500 dark:text-gray-400">posts</span></div>
+                        <div><span id="statFollowers" class="font-bold">14.8k</span> <span class="text-gray-500 dark:text-gray-400">followers</span></div>
+                        <div><span id="statFollowing" class="font-bold">521</span> <span class="text-gray-500 dark:text-gray-400">following</span></div>
+                    </div>
+
+                    <!-- Bio Block -->
+                    <div class="text-xs sm:text-sm space-y-1">
+                        <div id="profileName" class="font-bold text-gray-900 dark:text-white">Profile Name</div>
+                        <p id="profileBio" class="text-gray-700 dark:text-gray-300 whitespace-pre-line leading-relaxed">Profile bio text goes here...</p>
+                        <a id="profileLink" href="#" target="_blank" class="text-blue-900 dark:text-blue-400 font-semibold flex items-center justify-center sm:justify-start gap-1.5 hover:underline">
+                            <i class="fa-solid fa-link text-[10px]"></i> <span id="profileLinkLabel">website.com</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4 sm:gap-6 overflow-x-auto py-6 border-b border-gray-200 dark:border-igDarkBorder no-scrollbar">
+                <div id="highlightsContainer" class="flex gap-4 sm:gap-6">
+                    <!-- Dynamic Story Highlights -->
+                </div>
+                <div id="addHighlightBtn" class="flex flex-col items-center gap-1.5 min-w-[70px] cursor-pointer group">
+                    <div class="w-16 h-16 rounded-full border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center text-gray-400 group-hover:border-igBlue group-hover:text-igBlue transition bg-white dark:bg-igCardDark">
+                        <i class="fa-solid fa-plus text-base"></i>
+                    </div>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 font-medium">New</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="border-t border-gray-200 dark:border-igDarkBorder">
+            <div class="flex justify-center gap-12 text-xs font-semibold tracking-wider text-gray-400 uppercase">
+                <button class="tab-btn border-t-2 border-black dark:border-white text-black dark:text-white py-3 flex items-center gap-2 transition" data-tab="grid">
+                    <i class="fa-solid fa-border-all text-sm"></i> <span>Posts</span>
+                </button>
+                <button class="tab-btn hover:text-gray-600 dark:hover:text-gray-300 py-3 flex items-center gap-2 transition" data-tab="reels">
+                    <i class="fa-solid fa-clapperboard text-sm"></i> <span>Reels</span>
+                </button>
+                <button class="tab-btn hover:text-gray-600 dark:hover:text-gray-300 py-3 flex items-center gap-2 transition" data-tab="saved">
+                    <i class="fa-regular fa-bookmark text-sm"></i> <span>Saved</span>
+                </button>
+            </div>
+        </div>
+
+        <main class="flex-1">
+            <div id="feedGrid" class="grid grid-cols-3 gap-1 sm:gap-4 my-4">
+                <!-- Dynamic Post Grid Cards injected by JS -->
+            </div>
+        </main>
+
+        <!-- Footer Notice -->
+        <footer class="text-center text-xs text-gray-400 py-6 border-t border-gray-200 dark:border-igDarkBorder mt-auto">
+            <p>Instagram Feed Planner • Reorder items by dragging photos</p>
+        </footer>
+    </div>
+
+    
+    <!-- ADD / EDIT POST MODAL -->
+    <div id="postModal" class="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white dark:bg-igCardDark rounded-xl max-w-md w-full p-6 shadow-2xl relative border border-gray-200 dark:border-igDarkBorder max-h-[90vh] flex flex-col">
+            <button id="closePostModal" class="absolute top-4 right-4 text-gray-400 hover:text-black dark:hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h3 id="modalTitle" class="text-base font-bold mb-4">Create New Post</h3>
+            
+            <form id="postForm" class="space-y-4 overflow-y-auto pr-1 flex-1">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Post Format</label>
+                    <select id="inputType" class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-igDarkBorder bg-gray-50 dark:bg-black text-xs font-medium focus:outline-none focus:border-igBlue">
+                        <option value="single">Single Photo</option>
+                        <option value="carousel">Carousel (Multiple Photos)</option>
+                        <option value="reel">Reel (Video)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Select Media File(s)</label>
+                    <input type="file" id="inputFile" multiple accept="image/*,video/*" class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-igBlue file:text-white hover:file:bg-igBlueHover cursor-pointer">
+                    <p class="text-[11px] text-gray-400 mt-1" id="fileHelpText">Select 1 photo file.</p>
+                    <div id="filePreviewContainer" class="mt-3 flex gap-2 overflow-x-auto hidden py-2 border-t border-gray-100 dark:border-igDarkBorder"></div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Initial Likes Count</label>
+                    <input type="number" id="inputLikes" value="142" min="0" class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-igDarkBorder bg-gray-50 dark:bg-black text-xs focus:outline-none focus:border-igBlue">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Caption</label>
+                    <textarea id="inputCaption" rows="3" placeholder="Write a caption..." class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-igDarkBorder bg-gray-50 dark:bg-black text-xs focus:outline-none focus:border-igBlue"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-igDarkBorder">
+                    <button type="button" id="cancelPostBtn" class="px-4 py-2 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-igBlue hover:bg-igBlueHover text-white">Publish to Feed</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- POST LIGHTBOX VIEW MODAL -->
+    <div id="viewModal" class="fixed inset-0 bg-black/85 z-50 flex items-center justify-center hidden p-2 sm:p-6">
+        <button id="closeViewModal" class="absolute top-4 right-4 text-white text-2xl z-20 hover:text-gray-300">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="bg-white dark:bg-black rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col sm:flex-row overflow-hidden shadow-2xl border border-gray-800">
+            
+            <!-- Left Side: Media Lightbox Container -->
+            <div class="sm:w-3/5 bg-black flex items-center justify-center aspect-square sm:aspect-auto relative overflow-hidden group select-none">
+                <!-- Image Viewer -->
+                <img id="viewImage" src="" alt="Post Media" class="max-h-full max-w-full object-contain hidden">
+                
+                <!-- Video Viewer for Reels -->
+                <video id="viewVideo" controls class="max-h-full max-w-full hidden" autoplay loop muted playsinline></video>
+
+                <!-- Carousel Navigation Arrows -->
+                <button id="prevSlideBtn" class="absolute left-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/90 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs hidden transition transform active:scale-90">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <button id="nextSlideBtn" class="absolute right-3 top-1/2 -translate-y-1/2 bg-black/60 hover:bg-black/90 text-white rounded-full w-8 h-8 flex items-center justify-center text-xs hidden transition transform active:scale-90">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+
+                <!-- Carousel Dots Indicator -->
+                <div id="carouselDots" class="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 hidden bg-black/40 px-2.5 py-1 rounded-full backdrop-blur-xs"></div>
+            </div>
+
+            <!-- Right Side: Post Details & Comments -->
+            <div class="sm:w-2/5 flex flex-col h-full border-l border-gray-200 dark:border-igDarkBorder p-4 bg-white dark:bg-igCardDark">
+                
+                <!-- Header -->
+                <div class="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-igDarkBorder">
+                    <div class="flex items-center gap-3">
+                        <img id="viewAvatar" src="" class="w-8 h-8 rounded-full object-cover border border-gray-200 dark:border-gray-700">
+                        <span id="viewUsername" class="font-bold text-xs"></span>
+                    </div>
+                    <button id="deletePostBtn" title="Delete Post" class="text-red-500 hover:text-red-700 text-xs p-1">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+
+                <!-- Caption & Comments Scroll Area -->
+                <div class="flex-1 py-4 overflow-y-auto text-xs space-y-3">
+                    <div class="flex items-start gap-3">
+                        <img id="viewCaptionAvatar" src="" class="w-7 h-7 rounded-full object-cover flex-shrink-0 border border-gray-200 dark:border-gray-700">
+                        <div>
+                            <span id="viewCaptionUsername" class="font-bold mr-1"></span>
+                            <span id="viewCaption" class="whitespace-pre-line text-gray-700 dark:text-gray-300"></span>
+                            <div class="text-[10px] text-gray-400 mt-1">1d ago</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions & Likes Bar -->
+                <div class="pt-3 border-t border-gray-200 dark:border-igDarkBorder space-y-2">
+                    <div class="flex justify-between text-lg">
+                        <div class="flex gap-4">
+                            <button id="likePostBtn" class="hover:text-red-500 transition"><i class="fa-regular fa-heart"></i></button>
+                            <button class="hover:text-gray-500 transition"><i class="fa-regular fa-comment"></i></button>
+                            <button class="hover:text-gray-500 transition"><i class="fa-regular fa-paper-plane"></i></button>
+                        </div>
+                        <button class="hover:text-gray-500 transition"><i class="fa-regular fa-bookmark"></i></button>
+                    </div>
+                    <div id="viewLikes" class="font-bold text-xs">0 likes</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT PROFILE MODAL -->
+    <div id="profileModal" class="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white dark:bg-igCardDark rounded-xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-igDarkBorder">
+            <h3 class="text-base font-bold mb-4">Edit Profile Info</h3>
+            <form id="profileForm" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Avatar Image File</label>
+                    <input type="file" id="editAvatarFile" accept="image/*" class="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-igBlue file:text-white hover:file:bg-igBlueHover">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Username</label>
+                    <input type="text" id="editUsername" class="w-full p-2 rounded-lg border border-gray-300 dark:border-igDarkBorder bg-gray-50 dark:bg-black text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Display Name</label>
+                    <input type="text" id="editName" class="w-full p-2 rounded-lg border border-gray-300 dark:border-igDarkBorder bg-gray-50 dark:bg-black text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Bio</label>
+                    <textarea id="editBio" rows="3" class="w-full p-2 rounded-lg border border-gray-300 dark:border-igDarkBorder bg-gray-50 dark:bg-black text-xs"></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">External Website URL</label>
+                    <input type="text" id="editWebsite" class="w-full p-2 rounded-lg border border-gray-300 dark:border-igDarkBorder bg-gray-50 dark:bg-black text-xs">
+                </div>
+                <div class="flex justify-end gap-2 pt-2 border-t border-gray-100 dark:border-igDarkBorder">
+                    <button type="button" id="closeProfileModal" class="px-4 py-2 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-igBlue text-white hover:bg-igBlueHover">Save Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- EDIT / ADD STORY HIGHLIGHT MODAL -->
+    <div id="highlightModal" class="fixed inset-0 bg-black/75 backdrop-blur-xs z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white dark:bg-igCardDark rounded-xl max-w-md w-full p-6 shadow-2xl border border-gray-200 dark:border-igDarkBorder">
+            <h3 id="highlightModalTitle" class="text-base font-bold mb-4">Edit Story Highlight</h3>
+            <form id="highlightForm" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Highlight Title</label>
+                    <input type="text" id="editHighlightTitle" required class="w-full p-2 rounded-lg border border-gray-300 dark:border-igDarkBorder bg-gray-50 dark:bg-black text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-1">Cover Image File</label>
+                    <input type="file" id="editHighlightFile" accept="image/*" class="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-igBlue file:text-white">
+                </div>
+                <div class="flex justify-between items-center pt-2 border-t border-gray-100 dark:border-igDarkBorder">
+                    <button type="button" id="deleteHighlightBtn" class="text-red-500 hover:text-red-700 text-xs font-semibold hidden">Delete</button>
+                    <div class="flex gap-2 ml-auto">
+                        <button type="button" id="closeHighlightModal" class="px-4 py-2 rounded-lg text-xs font-semibold bg-gray-100 dark:bg-gray-800">Cancel</button>
+                        <button type="submit" class="px-4 py-2 rounded-lg text-xs font-semibold bg-igBlue text-white hover:bg-igBlueHover">Save Highlight</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Default Mock Data
+        const defaultProfile = {
+            username: "aesthetic_creator",
+            name: "Aesthetic Feed & Design Planner",
+            avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80",
+            bio: "✨ Curating daily aesthetics & design inspirations\n🌿 Notion & Workspace Customization\n📍 San Francisco, CA",
+            website: "https://notion.so/aesthetic-space"
+        };
+
+        const defaultHighlights = [
+            { id: 1, title: "Travel", cover: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=150&auto=format&fit=crop&q=80" },
+            { id: 2, title: "Design", cover: "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=150&auto=format&fit=crop&q=80" },
+            { id: 3, title: "Workspace", cover: "https://images.unsplash.com/photo-1517842645767-c639042777db?w=150&auto=format&fit=crop&q=80" }
+        ];
+
+        const defaultPosts = [
+            {
+                id: '1',
+                media: [
+                    'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=600&auto=format&fit=crop&q=80',
+                    'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=600&auto=format&fit=crop&q=80'
+                ],
+                type: 'carousel',
+                likes: 342,
+                caption: 'Minimalist desk setup for maximum daily focus. 💻✨ Swipe to see the morning lighting!'
+            },
+            {
+                id: '2',
+                media: ['https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=600&auto=format&fit=crop&q=80'],
+                type: 'single',
+                likes: 215,
+                caption: 'Morning matcha latte & notebook planning session. ☕️📖'
+            },
+            {
+                id: '3',
+                media: ['https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4'],
+                type: 'reel',
+                likes: 1280,
+                caption: 'Quick walkthrough of my current Notion productivity system! 🚀 #productivity #notion'
+            },
+            {
+                id: '4',
+                media: ['https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&auto=format&fit=crop&q=80'],
+                type: 'single',
+                likes: 184,
+                caption: 'Architecture & city shadows on a Tuesday afternoon. 🏙️'
+            },
+            {
+                id: '5',
+                media: [
+                    'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=600&auto=format&fit=crop&q=80',
+                    'https://images.unsplash.com/photo-1517842645767-c639042777db?w=600&auto=format&fit=crop&q=80'
+                ],
+                type: 'carousel',
+                likes: 412,
+                caption: 'Design moodboards and color palettes for the upcoming season. 🎨'
+            },
+            {
+                id: '6',
+                media: ['https://images.unsplash.com/photo-1517842645767-c639042777db?w=600&auto=format&fit=crop&q=80'],
+                type: 'single',
+                likes: 298,
+                caption: 'Keep your space organized, keep your mind clear. 🌿'
+            }
+        ];
+
+        // Global State Variables
+        let profile = { ...defaultProfile };
+        let highlights = [...defaultHighlights];
+        let posts = [...defaultPosts];
+        let currentTab = 'grid';
+        
+        let activePostId = null;
+        let activeCarouselIndex = 0;
+        let activeHighlightId = null;
+        let uploadedMediaArray = [];
+
+        // Helper: Convert File to Base64 String
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Load & Save LocalStorage
+        function loadState() {
+            try {
+                const p = localStorage.getItem('ig_planner_profile');
+                if (p) profile = JSON.parse(p);
+
+                const h = localStorage.getItem('ig_planner_highlights');
+                if (h) highlights = JSON.parse(h);
+
+                const po = localStorage.getItem('ig_planner_posts');
+                if (po) posts = JSON.parse(po);
+            } catch (e) {
+                console.warn('LocalStorage error:', e);
+            }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem('ig_planner_profile', JSON.stringify(profile));
+                localStorage.setItem('ig_planner_highlights', JSON.stringify(highlights));
+                localStorage.setItem('ig_planner_posts', JSON.stringify(posts));
+            } catch (e) {
+                console.warn('LocalStorage save error:', e);
+            }
+        }
+
+        // Render Functions
+        function renderProfile() {
+            document.getElementById('profileAvatar').src = profile.avatar;
+            document.getElementById('profileUsername').innerText = profile.username;
+            document.getElementById('profileName').innerText = profile.name;
+            document.getElementById('profileBio').innerText = profile.bio;
+            
+            const cleanUrl = profile.website.replace(/^https?:\/\//, '');
+            document.getElementById('profileLink').href = profile.website.startsWith('http') ? profile.website : `https://${profile.website}`;
+            document.getElementById('profileLinkLabel').innerText = cleanUrl;
+            
+            document.getElementById('statPostsCount').innerText = posts.length;
+        }
+
+        function renderHighlights() {
+            const container = document.getElementById('highlightsContainer');
+            container.innerHTML = highlights.map(h => `
+                <div class="flex flex-col items-center gap-1.5 min-w-[70px] cursor-pointer group" onclick="openHighlightModal(${h.id})">
+                    <div class="w-16 h-16 rounded-full p-[2px] border border-gray-300 dark:border-gray-700 group-hover:scale-105 transition overflow-hidden bg-white dark:bg-black shadow-xs">
+                        <img src="${h.cover}" class="w-full h-full object-cover rounded-full">
+                    </div>
+                    <span class="text-xs text-gray-700 dark:text-gray-300 font-medium truncate max-w-[68px]">${h.title}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderGrid() {
+            const grid = document.getElementById('feedGrid');
+            grid.innerHTML = '';
+
+            let filteredPosts = posts;
+            if (currentTab === 'reels') filteredPosts = posts.filter(p => p.type === 'reel');
+            else if (currentTab === 'saved') filteredPosts = [];
+
+            if (filteredPosts.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-3 text-center py-16 text-gray-400 text-xs flex flex-col items-center gap-2">
+                        <i class="fa-solid fa-camera text-2xl text-gray-300 dark:text-gray-700"></i>
+                        <span>No posts to display in this tab.</span>
+                    </div>`;
+                return;
+            }
+
+            filteredPosts.forEach(post => {
+                const card = document.createElement('div');
+                card.className = "relative aspect-square overflow-hidden bg-gray-200 dark:bg-gray-900 group cursor-grab rounded-sm select-none shadow-xs";
+                card.dataset.id = post.id;
+
+                let iconBadge = '';
+                if (post.type === 'carousel') {
+                    iconBadge = `<div class="absolute top-2.5 right-2.5 text-white drop-shadow-md text-xs"><i class="fa-solid fa-layer-group"></i></div>`;
+                } else if (post.type === 'reel') {
+                    iconBadge = `<div class="absolute top-2.5 right-2.5 text-white drop-shadow-md text-xs"><i class="fa-solid fa-play"></i></div>`;
+                }
+
+                let mediaHTML = '';
+                if (post.type === 'reel') {
+                    mediaHTML = `<video src="${post.media[0]}" class="w-full h-full object-cover pointer-events-none" muted></video>`;
+                } else {
+                    mediaHTML = `<img src="${post.media[0]}" class="w-full h-full object-cover pointer-events-none">`;
+                }
+
+                card.innerHTML = `
+                    ${mediaHTML}
+                    ${iconBadge}
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-6 text-white font-bold text-xs pointer-events-none">
+                        <div class="flex items-center gap-1.5"><i class="fa-solid fa-heart"></i> ${post.likes}</div>
+                    </div>
+                `;
+
+                // Open lightbox on click
+                card.addEventListener('click', () => openViewModal(post.id));
+                grid.appendChild(card);
+            });
+        }
+
+        // File Selection & Preview Handling
+        document.getElementById('inputType').addEventListener('change', (e) => {
+            const val = e.target.value;
+            const fileInput = document.getElementById('inputFile');
+            const helpText = document.getElementById('fileHelpText');
+
+            if (val === 'carousel') {
+                fileInput.setAttribute('multiple', 'true');
+                helpText.innerText = "Select 2 or more photos for carousel.";
+            } else if (val === 'reel') {
+                fileInput.removeAttribute('multiple');
+                helpText.innerText = "Select a video file (MP4/WEBM).";
+            } else {
+                fileInput.removeAttribute('multiple');
+                helpText.innerText = "Select 1 photo file.";
+            }
+        });
+
+        document.getElementById('inputFile').addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            uploadedMediaArray = [];
+            const container = document.getElementById('filePreviewContainer');
+            container.innerHTML = '';
+
+            for (let file of files) {
+                const base64 = await fileToBase64(file);
+                uploadedMediaArray.push(base64);
+
+                const isVideo = file.type.startsWith('video');
+                const el = document.createElement(isVideo ? 'video' : 'img');
+                el.src = base64;
+                el.className = "w-14 h-14 object-cover rounded border border-gray-300 dark:border-gray-700 flex-shrink-0";
+                container.appendChild(el);
+            }
+
+            if (uploadedMediaArray.length > 0) {
+                container.classList.remove('hidden');
+            }
+        });
+
+        // Lightbox View Logic
+        function openViewModal(id) {
+            const post = posts.find(p => p.id === id);
+            if (!post) return;
+
+            activePostId = id;
+            activeCarouselIndex = 0;
+
+            document.getElementById('viewAvatar').src = profile.avatar;
+            document.getElementById('viewUsername').innerText = profile.username;
+            document.getElementById('viewCaptionAvatar').src = profile.avatar;
+            document.getElementById('viewCaptionUsername').innerText = profile.username;
+            document.getElementById('viewCaption').innerText = post.caption;
+            document.getElementById('viewLikes').innerText = `${post.likes} likes`;
+
+            const imgEl = document.getElementById('viewImage');
+            const vidEl = document.getElementById('viewVideo');
+
+            if (post.type === 'reel') {
+                imgEl.classList.add('hidden');
+                vidEl.classList.remove('hidden');
+                vidEl.src = post.media[0];
+                vidEl.play().catch(() => {});
+                
+                document.getElementById('prevSlideBtn').classList.add('hidden');
+                document.getElementById('nextSlideBtn').classList.add('hidden');
+                document.getElementById('carouselDots').classList.add('hidden');
+            } else {
+                vidEl.classList.add('hidden');
+                vidEl.pause();
+                imgEl.classList.remove('hidden');
+                updateCarouselView(post);
+            }
+
+            document.getElementById('viewModal').classList.remove('hidden');
+        }
+
+        function updateCarouselView(post) {
+            const imgEl = document.getElementById('viewImage');
+            const prevBtn = document.getElementById('prevSlideBtn');
+            const nextBtn = document.getElementById('nextSlideBtn');
+            const dotsContainer = document.getElementById('carouselDots');
+
+            imgEl.src = post.media[activeCarouselIndex];
+
+            if (post.type === 'carousel' && post.media.length > 1) {
+                prevBtn.classList.toggle('hidden', activeCarouselIndex === 0);
+                nextBtn.classList.toggle('hidden', activeCarouselIndex === post.media.length - 1);
+                
+                dotsContainer.classList.remove('hidden');
+                dotsContainer.innerHTML = post.media.map((_, i) => `
+                    <span class="w-1.5 h-1.5 rounded-full transition-all ${i === activeCarouselIndex ? 'bg-igBlue scale-125' : 'bg-white/60'}"></span>
+                `).join('');
+            } else {
+                prevBtn.classList.add('hidden');
+                nextBtn.classList.add('hidden');
+                dotsContainer.classList.add('hidden');
+            }
+        }
+
+        // Slide Arrow Navigation
+        document.getElementById('prevSlideBtn').onclick = () => {
+            const post = posts.find(p => p.id === activePostId);
+            if (post && activeCarouselIndex > 0) {
+                activeCarouselIndex--;
+                updateCarouselView(post);
+            }
+        };
+
+        document.getElementById('nextSlideBtn').onclick = () => {
+            const post = posts.find(p => p.id === activePostId);
+            if (post && activeCarouselIndex < post.media.length - 1) {
+                activeCarouselIndex++;
+                updateCarouselView(post);
+            }
+        };
+
+        // Add Post Form Submit
+        document.getElementById('postForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            if (uploadedMediaArray.length === 0) {
+                alert("Please select at least one media file.");
+                return;
+            }
+
+            const type = document.getElementById('inputType').value;
+            const likes = parseInt(document.getElementById('inputLikes').value) || 0;
+            const caption = document.getElementById('inputCaption').value;
+
+            const newPost = {
+                id: Date.now().toString(),
+                media: [...uploadedMediaArray],
+                type,
+                likes,
+                caption
+            };
+
+            posts.unshift(newPost);
+            saveState();
+            renderGrid();
+            renderProfile();
+
+            document.getElementById('postModal').classList.add('hidden');
+        });
+
+        // Edit Profile Submit
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const avatarFile = document.getElementById('editAvatarFile').files[0];
+            if (avatarFile) {
+                profile.avatar = await fileToBase64(avatarFile);
+            }
+
+            profile.username = document.getElementById('editUsername').value.trim() || profile.username;
+            profile.name = document.getElementById('editName').value.trim() || profile.name;
+            profile.bio = document.getElementById('editBio').value || profile.bio;
+            profile.website = document.getElementById('editWebsite').value.trim() || profile.website;
+
+            saveState();
+            renderProfile();
+            document.getElementById('profileModal').classList.add('hidden');
+        });
+
+        // Story Highlight Modal Logic
+        function openHighlightModal(id) {
+            activeHighlightId = id;
+            const deleteBtn = document.getElementById('deleteHighlightBtn');
+
+            if (id) {
+                const item = highlights.find(h => h.id === id);
+                document.getElementById('highlightModalTitle').innerText = "Edit Highlight";
+                document.getElementById('editHighlightTitle').value = item ? item.title : '';
+                deleteBtn.classList.remove('hidden');
+            } else {
+                document.getElementById('highlightModalTitle').innerText = "New Highlight";
+                document.getElementById('editHighlightTitle').value = '';
+                deleteBtn.classList.add('hidden');
+            }
+
+            document.getElementById('highlightModal').classList.remove('hidden');
+        }
+
+        document.getElementById('addHighlightBtn').onclick = () => openHighlightModal(null);
+
+        document.getElementById('highlightForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('editHighlightTitle').value.trim();
+            const coverFile = document.getElementById('editHighlightFile').files[0];
+
+            let cover = "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=150&auto=format&fit=crop&q=80";
+            if (coverFile) {
+                cover = await fileToBase64(coverFile);
+            }
+
+            if (activeHighlightId) {
+                const item = highlights.find(h => h.id === activeHighlightId);
+                if (item) {
+                    item.title = title;
+                    if (coverFile) item.cover = cover;
+                }
+            } else {
+                highlights.push({
+                    id: Date.now(),
+                    title,
+                    cover
+                });
+            }
+
+            saveState();
+            renderHighlights();
+            document.getElementById('highlightModal').classList.add('hidden');
+        });
+
+        document.getElementById('deleteHighlightBtn').onclick = () => {
+            if (activeHighlightId) {
+                highlights = highlights.filter(h => h.id !== activeHighlightId);
+                saveState();
+                renderHighlights();
+            }
+            document.getElementById('highlightModal').classList.add('hidden');
+        };
+
+        // Navigation Tab Switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('border-t-2', 'border-black', 'dark:border-white', 'text-black', 'dark:text-white');
+                    b.classList.add('text-gray-400');
+                });
+                const target = e.currentTarget;
+                target.classList.add('border-t-2', 'border-black', 'dark:border-white', 'text-black', 'dark:text-white');
+                target.classList.remove('text-gray-400');
+                currentTab = target.dataset.tab;
+                renderGrid();
+            });
+        });
+
+        // Initialize Drag and Drop Grid Reordering
+        function initSortable() {
+            const grid = document.getElementById('feedGrid');
+            new Sortable(grid, {
+                animation: 200,
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                onEnd: function () {
+                    const newOrder = Array.from(grid.children).map(child => child.dataset.id);
+                    posts.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
+                    saveState();
+                }
+            });
+        }
+
+        // Initialize App on Window Load
+        window.onload = function() {
+            loadState();
+            renderProfile();
+            renderHighlights();
+            renderGrid();
+            initSortable();
+
+            // Modal Button Triggers
+            document.getElementById('addPostBtn').onclick = () => {
+                uploadedMediaArray = [];
+                document.getElementById('postForm').reset();
+                document.getElementById('filePreviewContainer').classList.add('hidden');
+                document.getElementById('postModal').classList.remove('hidden');
+            };
+
+            document.getElementById('editProfileBtn').onclick = () => {
+                document.getElementById('editUsername').value = profile.username;
+                document.getElementById('editName').value = profile.name;
+                document.getElementById('editBio').value = profile.bio;
+                document.getElementById('editWebsite').value = profile.website;
+                document.getElementById('profileModal').classList.remove('hidden');
+            };
+
+            document.getElementById('editAvatarBtn').onclick = () => {
+                document.getElementById('editProfileBtn').click();
+            };
+
+            document.getElementById('closePostModal').onclick = () => document.getElementById('postModal').classList.add('hidden');
+            document.getElementById('cancelPostBtn').onclick = () => document.getElementById('postModal').classList.add('hidden');
+            document.getElementById('closeProfileModal').onclick = () => document.getElementById('profileModal').classList.add('hidden');
+            document.getElementById('closeHighlightModal').onclick = () => document.getElementById('highlightModal').classList.add('hidden');
+            
+            document.getElementById('closeViewModal').onclick = () => {
+                document.getElementById('viewVideo').pause();
+                document.getElementById('viewModal').classList.add('hidden');
+            };
+
+            document.getElementById('deletePostBtn').onclick = () => {
+                if (confirm("Are you sure you want to delete this post from your planner?")) {
+                    posts = posts.filter(p => p.id !== activePostId);
+                    saveState();
+                    renderGrid();
+                    renderProfile();
+                    document.getElementById('viewModal').classList.add('hidden');
+                }
+            };
+
+            document.getElementById('toggleThemeBtn').onclick = () => {
+                document.documentElement.classList.toggle('dark');
+            };
+
+            document.getElementById('resetDemoBtn').onclick = () => {
+                if (confirm("Reset profile and feed back to default template?")) {
+                    profile = { ...defaultProfile };
+                    highlights = [...defaultHighlights];
+                    posts = [...defaultPosts];
+                    saveState();
+                    renderProfile();
+                    renderHighlights();
+                    renderGrid();
+                }
+            };
+
+            document.getElementById('shareProfileBtn').onclick = () => {
+                navigator.clipboard?.writeText(window.location.href);
+                alert("Planner link copied to clipboard!");
+            };
+
+            document.getElementById('likePostBtn').onclick = () => {
+                const post = posts.find(p => p.id === activePostId);
+                if (post) {
+                    post.likes++;
+                    document.getElementById('viewLikes').innerText = `${post.likes} likes`;
+                    saveState();
+                    renderGrid();
+                }
+            };
+        };
+    </script>
+</body>
+</html>        /* Custom scrollbars */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
